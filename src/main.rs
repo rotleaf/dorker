@@ -1,8 +1,13 @@
+mod api;
 mod config;
 mod utilities;
 
-use crate::{config::Config, utilities::Ret};
+use crate::{config::Config, utilities::*};
 use clap::{Parser, Subcommand};
+use cliclack::{intro, log};
+use colored::Colorize;
+use serde::Deserialize;
+use serde_json::from_str;
 use std::fs;
 
 #[derive(Parser)]
@@ -35,50 +40,22 @@ enum Commands {
 
 fn main() -> Ret<()> {
     let cli = Cli::parse();
-    
-    let config = fs::read_to_string(cli.config_path)?;
+
+    let config_path = &cli.config_path;
+    let config = fs::read_to_string(config_path)?;
     let cnf = serde_yaml::from_str::<Config>(&config)?;
     let keys = cnf.api_keys;
-    
-    for key in keys {
-        // okay, here they are, randomly pick orr?
-    }
+
+    intro("I am Dorker")?;
+
+    log::info(format!(
+        "Config {} contains {} api key/s",
+        format!("@{}", config_path).yellow(),
+        keys.len()
+    ))?;
+
+    let chosen = best_key(&keys)?;
+    // search right away,
+
     Ok(())
-}
-
-pub enum SearchEngine {
-    Google,
-    Bing,
-    DuckDuckGo,
-}
-
-pub struct QueryApi {
-    pub query: String,
-    pub engine: SearchEngine,
-    pub api_key:String
-}
-
-impl QueryApi {
-    pub fn new(query: &str, engine: SearchEngine, api_key:&str) -> Self {
-        Self {
-            query: query.into(),
-            engine,
-            api_key: api_key.into()
-        }
-    }
-
-    pub fn search(&self) -> Ret<()> {
-        let req = ureq::get(format!("https://serpapi.com/search?engine={}&q={}&api_key={}", self.gengine(), self.query, self.api_key)).call()?.body_mut().read_to_string()?;
-        
-        dbg!(req);
-        Ok(())
-    }
-
-    pub fn gengine(&self) -> &str {
-        match &self.engine {
-            SearchEngine::Google => "google",
-            SearchEngine::Bing => "bing",
-            SearchEngine::DuckDuckGo => "duckduckgo",
-        }
-    }
 }
