@@ -7,11 +7,11 @@ pub fn best_key(keys: &[String]) -> Ret<String> {
     let mut max_searches = 0;
 
     for key in keys {
-        if let Ok(remaining) = Api::new(key).account_info() {
-            if remaining > max_searches {
-                max_searches = remaining;
-                best_key = Some(key.clone());
-            }
+        if let Ok(remaining) = Api::new(key).account_info()
+            && remaining > max_searches
+        {
+            max_searches = remaining;
+            best_key = Some(key.clone());
         }
     }
 

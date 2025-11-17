@@ -2,12 +2,9 @@ mod api;
 mod config;
 mod utilities;
 
-use crate::{config::Config, utilities::*};
+use crate::{api::*, config::Config, utilities::*};
 use clap::{Parser, Subcommand};
-use cliclack::{intro, log};
 use colored::Colorize;
-use serde::Deserialize;
-use serde_json::from_str;
 use std::fs;
 
 #[derive(Parser)]
@@ -23,7 +20,7 @@ struct Cli {
     config_path: String,
 
     #[arg(short, long, default_value = "dorks.txt", help = "your output file")]
-    output: Option<String>,
+    output: String,
 
     #[command(subcommand)]
     command: Commands,
@@ -46,16 +43,33 @@ fn main() -> Ret<()> {
     let cnf = serde_yaml::from_str::<Config>(&config)?;
     let keys = cnf.api_keys;
 
-    intro("I am Dorker")?;
-
-    log::info(format!(
-        "Config {} contains {} api key/s",
-        format!("@{}", config_path).yellow(),
-        keys.len()
-    ))?;
+    println!(
+        "{}",
+        format!(
+            "> Config {} contains {} api key/s",
+            format!("@{}", config_path).yellow(),
+            keys.len()
+        )
+    );
 
     let chosen = best_key(&keys)?;
     // search right away,
+
+    let api = Api::new(&chosen);
+    let query = match &cli.command {
+        Commands::Google { query } => query.clone(),
+    };
+    api.search_paginated(
+        Query {
+            engine: SearchEngine::Google, // we love google, right,
+            query,
+        },
+        SearchOptions {
+            max_pages: None,
+            delay_ms: 100,
+            output_file: Some(cli.output),
+        },
+    )?;
 
     Ok(())
 }
